@@ -144,10 +144,16 @@ def query_total_login_count(engine: Engine) -> Optional[int]:
     """
     try:
         start_date, end_date = get_total_date_range()
+        today = date.today()
+        effective_end_date = min(end_date, today)
+
+        if start_date > effective_end_date:
+            logger.info("總登入查詢日期範圍皆為未來時間，回傳 0")
+            return 0
 
         # 轉換為 datetime 物件
         start_datetime = datetime.combine(start_date, datetime.min.time())
-        end_datetime = datetime.combine(end_date, datetime.max.time())
+        end_datetime = datetime.combine(effective_end_date, datetime.max.time())
 
         # 建立 Session
         SessionLocal = sessionmaker(bind=engine)
@@ -176,6 +182,67 @@ def query_total_login_count(engine: Engine) -> Optional[int]:
     except Exception as e:
         logger.error(f"查詢總登入次數失敗: {e}", exc_info=True)
         return None
+
+
+def generate_line_chart(
+    week_counts: List[Dict],
+    output_file: str = "membership_login_trend.png"
+):
+    """
+    產生每週登入次數折線圖（PNG）
+
+    Args:
+        week_counts: 各週統計列表
+        output_file: 圖表輸出檔名
+    """
+    if not week_counts:
+        logger.warning("無可用週資料，略過折線圖產生")
+        return
+
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib import rcParams
+    except ImportError:
+        logger.warning("未安裝 matplotlib，略過折線圖輸出")
+        return
+
+    # Windows 常見中文字型 fallback，避免中文顯示成方框
+    rcParams["font.sans-serif"] = [
+        "Microsoft JhengHei",
+        "PingFang TC",
+        "Noto Sans CJK TC",
+        "SimHei",
+        "Arial Unicode MS",
+        "sans-serif",
+    ]
+    rcParams["axes.unicode_minus"] = False
+
+    labels = [item.get("label", item["period"]) for item in week_counts]
+    values = [item["count"] for item in week_counts]
+
+    fig, ax = plt.subplots(figsize=(16, 7))
+    x_positions = list(range(len(labels)))
+
+    ax.plot(x_positions, values, marker="o", markersize=4, linewidth=2, color="#1f77b4")
+    ax.set_title("前台每週登入次數趨勢")
+    ax.set_xlabel("週期")
+    ax.set_ylabel("登入次數")
+    ax.grid(True, linestyle="--", alpha=0.35)
+
+    # 資料點過多時自動抽樣顯示 X 軸標籤，避免重疊
+    tick_step = max(1, len(labels) // 10)
+    tick_indexes = list(range(0, len(labels), tick_step))
+    if tick_indexes[-1] != len(labels) - 1:
+        tick_indexes.append(len(labels) - 1)
+
+    ax.set_xticks(tick_indexes)
+    ax.set_xticklabels([labels[i] for i in tick_indexes], rotation=35, ha="right")
+    fig.tight_layout()
+    fig.savefig(output_file, dpi=180)
+    plt.close(fig)
+
+    logger.info(f"折線圖已產生: {output_file}")
+    print(f"折線圖已儲存至: {output_file}")
 
 
 def generate_csv_report(week_counts: List[Dict], total_count: int, output_file: str = "membership_login_report.csv"):
@@ -244,11 +311,19 @@ def main():
         weeks = get_week_ranges()
         week_counts = []
 
+        today = date.today()
+
         for week_desc, week_start, week_end, week_label in weeks:
-            count = query_weekly_login_count(engine, week_start, week_end)
+            if week_start > today:
+                logger.info(f"略過未來週期: {week_desc}")
+                continue
+
+            effective_week_end = min(week_end, today)
+            count = query_weekly_login_count(engine, week_start, effective_week_end)
             if count is not None:
                 week_counts.append({
                     'period': week_desc,
+                    'label': week_label,
                     'count': count
                 })
                 logger.info(f"{week_desc}: {count} 次")
@@ -257,6 +332,7 @@ def main():
 
         # 產生 CSV 報告
         generate_csv_report(week_counts, total_count)
+        generate_line_chart(week_counts)
 
     finally:
         # 關閉資料庫引擎
