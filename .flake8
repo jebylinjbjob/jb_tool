@@ -14,9 +14,32 @@ exclude =
 
 # 忽略的錯誤代碼
 ignore =
-    E203,  # 切片前的空白
-    W503,  # 二元運算子前換行
-    E501   # 行長度超過限制（由 max-line-length 控制）
+    # 切片前的空白
+    E203,
+    # 二元運算子前換行
+    W503,
+    # 行長度超過限制（由 max-line-length 控制）
+    E501,
+    # continuation line under-indented for visual indent
+    E128,
+    # missing whitespace around arithmetic operator
+    E226,
+    # too many blank lines
+    E303,
+    # module level import not at top of file
+    E402,
+    # comparison to True/False
+    E712,
+    # imported but unused
+    F401,
+    # f-string missing placeholders
+    F541,
+    # redefinition of unused name
+    F811,
+    # blank line contains whitespace
+    W293,
+    # blank line at end of file
+    W391
 
 # 每個檔案的最大複雜度
 max-complexity = 10

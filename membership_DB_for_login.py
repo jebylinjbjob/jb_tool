@@ -29,20 +29,18 @@ logger = logging.getLogger("membership_db")
 Base = declarative_base()
 
 
-# 定義 AbpAuditLogs 模型
-class AbpAuditLogs(Base):
+# 定義 AbpSecurityLogs 模型
+class AbpSecurityLogs(Base):
     """
-    AbpAuditLogs 資料表模型
+    AbpSecurityLogs 資料表模型
     """
-    __tablename__ = 'AbpAuditLogs'
+    __tablename__ = 'AbpSecurityLogs'
     __table_args__ = {'schema': 'dbo'}
 
     # 定義欄位（根據查詢需求，只定義必要的欄位）
     Id = Column(String, primary_key=True)
     ApplicationName = Column(String)
-    Url = Column(String)
-    HttpStatusCode = Column(Integer)
-    ExecutionTime = Column(DateTime)
+    CreationTime = Column(DateTime)
     # 其他欄位可以根據需要添加
 
 
@@ -112,13 +110,11 @@ def query_weekly_login_count(engine: Engine, week_start: date, week_end: date) -
         try:
             # 使用 ORM 查詢
             count = (
-                session.query(func.count(AbpAuditLogs.Id))
+                session.query(func.count(AbpSecurityLogs.Id))
                 .filter(
-                    AbpAuditLogs.ApplicationName == 'Public.JbJobMembership.HttpApi.Host',
-                    AbpAuditLogs.Url.like('%/connect/token%'),
-                    AbpAuditLogs.HttpStatusCode == 200,
-                    AbpAuditLogs.ExecutionTime >= start_datetime,
-                    AbpAuditLogs.ExecutionTime <= end_datetime
+                    AbpSecurityLogs.ApplicationName == 'Public.JbJobMembership.HttpApi.Host',
+                    AbpSecurityLogs.CreationTime >= start_datetime,
+                    AbpSecurityLogs.CreationTime <= end_datetime
                 )
                 .scalar()
             )
@@ -160,13 +156,11 @@ def query_total_login_count(engine: Engine) -> Optional[int]:
         try:
             # 使用 ORM 查詢
             count = (
-                session.query(func.count(AbpAuditLogs.Id))
+                session.query(func.count(AbpSecurityLogs.Id))
                 .filter(
-                    AbpAuditLogs.ApplicationName == 'Public.JbJobMembership.HttpApi.Host',
-                    (AbpAuditLogs.Url.like('%/connect/token%') | AbpAuditLogs.Url.like('%/api/app/line-login/token%')),
-                    AbpAuditLogs.HttpStatusCode == 200,
-                    AbpAuditLogs.ExecutionTime >= start_datetime,
-                    AbpAuditLogs.ExecutionTime <= end_datetime
+                    AbpSecurityLogs.ApplicationName == 'Public.JbJobMembership.HttpApi.Host',
+                    AbpSecurityLogs.CreationTime >= start_datetime,
+                    AbpSecurityLogs.CreationTime <= end_datetime
                 )
                 .scalar()
             )

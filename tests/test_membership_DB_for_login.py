@@ -11,7 +11,7 @@ from unittest.mock import Mock, MagicMock, patch, mock_open
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from membership_DB_for_login import (
-    AbpAuditLogs,
+    AbpSecurityLogs,
     get_db_engine,
     query_weekly_login_count,
     query_total_login_count,
@@ -19,25 +19,23 @@ from membership_DB_for_login import (
 )
 
 
-class TestAbpAuditLogsModel:
-    """測試 AbpAuditLogs 模型"""
+class TestAbpSecurityLogsModel:
+    """測試 AbpSecurityLogs 模型"""
 
     def test_model_tablename(self):
         """測試資料表名稱"""
-        assert AbpAuditLogs.__tablename__ == 'AbpAuditLogs'
+        assert AbpSecurityLogs.__tablename__ == 'AbpSecurityLogs'
 
     def test_model_schema(self):
         """測試資料表 schema"""
-        assert AbpAuditLogs.__table_args__ == {'schema': 'dbo'}
+        assert AbpSecurityLogs.__table_args__ == {'schema': 'dbo'}
 
     def test_model_has_required_columns(self):
         """測試模型包含必要的欄位"""
-        columns = [col.name for col in AbpAuditLogs.__table__.columns]
+        columns = [col.name for col in AbpSecurityLogs.__table__.columns]
         assert 'Id' in columns
         assert 'ApplicationName' in columns
-        assert 'Url' in columns
-        assert 'HttpStatusCode' in columns
-        assert 'ExecutionTime' in columns
+        assert 'CreationTime' in columns
 
 
 class TestGetDbEngine:

@@ -28,6 +28,8 @@ logger = logging.getLogger("hireme_report")
 # 建立 Base 類別
 Base = declarative_base()
 
+HIREME_DATABASE = os.getenv("DB_DATABASE_HireMePlz", "HireMePlz")
+
 
 # 定義 User 模型
 class User(Base):
@@ -56,7 +58,7 @@ class UserResumeTempStatus(Base):
 from sqlalchemy import Table as SQLTable
 
 
-def get_db_engine(database: str = "HireMePlz") -> Optional[Engine]:
+def get_db_engine(database: Optional[str] = None) -> Optional[Engine]:
     """
     創建資料庫引擎
 
@@ -68,6 +70,7 @@ def get_db_engine(database: str = "HireMePlz") -> Optional[Engine]:
     """
     try:
         # 從環境變數讀取資料庫連接資訊
+        database_name = database or HIREME_DATABASE
         db_server = os.getenv("DB_SERVER")
         db_username = os.getenv("DB_USER_ID")
         db_password = os.getenv("DB_PASSWORD")
@@ -79,7 +82,7 @@ def get_db_engine(database: str = "HireMePlz") -> Optional[Engine]:
 
         # 建立連接字串
         connection_string = (
-            f"mssql+pyodbc://{db_username}:{db_password}@{db_server}/{database}"
+            f"mssql+pyodbc://{db_username}:{db_password}@{db_server}/{database_name}"
             f"?driver={db_driver.replace(' ', '+')}"
             f"&autocommit=True"
         )
@@ -90,7 +93,7 @@ def get_db_engine(database: str = "HireMePlz") -> Optional[Engine]:
             pool_pre_ping=True
         )
 
-        logger.info(f"成功創建資料庫引擎: {db_server}/{database}")
+        logger.info(f"成功創建資料庫引擎: {db_server}/{database_name}")
         return engine
 
     except Exception as e:
@@ -139,14 +142,14 @@ def query_registered_users(engine: Engine) -> List[Dict]:
 
             # 使用原生 SQL 查詢（因為跨資料庫查詢在 ORM 中較複雜）
             # 但使用 ORM 模型來定義結果結構
-            sql_query = text("""
+            sql_query = text(f"""
                 SELECT
                     u.Id,
                     u.LoginName,
                     ru.CreateDate,
                     ru.NameC
-                FROM HireMePlz.dbo.[User] u
-                LEFT JOIN HireMePlz.dbo.userResumeTempStatus urts ON u.Id = urts.userId
+                FROM {HIREME_DATABASE}.dbo.[User] u
+                LEFT JOIN {HIREME_DATABASE}.dbo.userResumeTempStatus urts ON u.Id = urts.userId
                 LEFT JOIN JBHRIS_DISPATCH.dbo.REC_User ru ON ru.UserID = urts.backId
                 WHERE ru.CreateDate BETWEEN :start_date AND :end_date
                 AND u.lineUid IS NOT NULL
@@ -201,14 +204,14 @@ def query_exported_finished_users(engine: Engine) -> List[Dict]:
         try:
             from sqlalchemy import text
 
-            sql_query = text("""
+            sql_query = text(f"""
                 SELECT
                     u.Id,
                     u.LoginName,
                     ru.CreateDate,
                     ru.NameC
-                FROM HireMePlz.dbo.[User] u
-                LEFT JOIN HireMePlz.dbo.userResumeTempStatus urts ON u.Id = urts.userId
+                FROM {HIREME_DATABASE}.dbo.[User] u
+                LEFT JOIN {HIREME_DATABASE}.dbo.userResumeTempStatus urts ON u.Id = urts.userId
                 LEFT JOIN JBHRIS_DISPATCH.dbo.REC_User ru ON ru.UserID = urts.backId
                 WHERE ru.CreateDate BETWEEN :start_date AND :end_date
                 AND u.lineUid IS NOT NULL
@@ -386,7 +389,7 @@ def main():
     logger.info("開始產生 HireMe 註冊人數統計報告")
 
     # 創建資料庫引擎
-    engine = get_db_engine("HireMePlz")
+    engine = get_db_engine()
     if not engine:
         logger.error("無法創建資料庫引擎，程式結束")
         return
