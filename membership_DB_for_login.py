@@ -188,6 +188,9 @@ def generate_csv_report(week_counts: List[Dict], total_count: int, output_file: 
         output_file: 輸出檔案名稱
     """
     try:
+        start_date, end_date = get_total_date_range()
+        date_range_label = f"{start_date.strftime('%Y/%m/%d')}~{end_date.strftime('%Y/%m/%d')}"
+
         # 寫入 CSV
         with open(output_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
@@ -196,7 +199,7 @@ def generate_csv_report(week_counts: List[Dict], total_count: int, output_file: 
             writer.writerow(['期間', '登入次數'])
 
             # 寫入總登入次數
-            writer.writerow([f'總登入人數（11/17~1/11）', total_count])
+            writer.writerow([f'總登入人數（{date_range_label}）', total_count])
 
             # 寫入各週統計
             for week_data in week_counts:
@@ -208,7 +211,7 @@ def generate_csv_report(week_counts: List[Dict], total_count: int, output_file: 
         print(f"\n{'='*60}")
         print("前台登入次數統計報告")
         print(f"{'='*60}")
-        print(f"總登入人數（11/17~1/11）：{total_count:,}")
+        print(f"總登入人數（{date_range_label}）：{total_count:,}")
         for week_data in week_counts:
             print(f"{week_data['period']}：{week_data['count']:,}")
         print(f"{'='*60}\n")

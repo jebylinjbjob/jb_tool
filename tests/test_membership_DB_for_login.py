@@ -330,7 +330,7 @@ class TestGenerateCsvReport:
             assert rows[0] == ['期間', '登入次數']
 
             # 驗證總登入次數
-            assert rows[1] == ['總登入人數（11/17~1/11）', '450']
+            assert rows[1] == ['總登入人數（2025/11/17~2026/12/31）', '450']
 
             # 驗證各週統計
             assert rows[2] == ['2025/11月（第3週 11/17~11/23）', '100']
@@ -353,7 +353,7 @@ class TestGenerateCsvReport:
             rows = list(reader)
 
             assert rows[0] == ['期間', '登入次數']
-            assert rows[1] == ['總登入人數（11/17~1/11）', '0']
+            assert rows[1] == ['總登入人數（2025/11/17~2026/12/31）', '0']
             assert len(rows) == 2
 
     def test_generate_csv_report_large_numbers(self, tmp_path):
@@ -373,7 +373,7 @@ class TestGenerateCsvReport:
             reader = csv.reader(f)
             rows = list(reader)
 
-            assert rows[1] == ['總登入人數（11/17~1/11）', '999999']
+            assert rows[1] == ['總登入人數（2025/11/17~2026/12/31）', '999999']
             assert rows[2] == ['2025/11月（第3週 11/17~11/23）', '999999']
 
     def test_generate_csv_report_utf8_encoding(self, tmp_path):
